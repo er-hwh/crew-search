@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Crew Search</title>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<style>
+body{background:#f3f6fb}
+.search-box{max-width:720px;margin:auto;margin-top:60px}
+.list-group-item{cursor:pointer}
+.card{border-radius:16px}
+.badge{font-size:.9rem}
+</style>
+
+</head>
+<body>
+
+<div class="search-box">
+<h3 class="mb-3">👨‍✈️ Crew Search</h3>
+
+<input id="q" class="form-control form-control-lg" placeholder="Search ID / Name / Mobile / Designation">
+
+<div id="status" class="text-muted mt-2"></div>
+<div id="suggestions" class="list-group mt-3"></div>
+<div id="card" class="mt-4"></div>
+</div>
+
+<script>
+/************ CONFIG ************/
+const API_URL="https://script.google.com/macros/s/AKfycbyPLqkuNdK7-DF0aXl9PBfKJ-VMml5Dj8MaWC8OJ_CMXi-DBXg3MeSUoChCpaLKxh_U/exec";
+const CACHE_KEY="crew_db_v1";
+const CACHE_TIME=24*60*60*1000;
+
+let DB=[];
+
+/************ LOAD DATABASE ************/
+function loadDB(res){
+
+localStorage.setItem(CACHE_KEY,JSON.stringify(res));
+DB=res.data;
+document.getElementById("status").innerText="Database loaded ("+DB.length+" records)";
+}
+
+/************ INIT ************/
+(function(){
+
+let cache=localStorage.getItem(CACHE_KEY);
+
+if(cache){
+let obj=JSON.parse(cache);
+if(Date.now()-obj.updated < CACHE_TIME){
+DB=obj.data;
+document.getElementById("status").innerText="Loaded from cache ("+DB.length+")";
+return;
+}
+}
+
+document.getElementById("status").innerText="Downloading database...";
+let s=document.createElement("script");
+s.src=API_URL+"?callback=loadDB";
+document.body.appendChild(s);
+
+})();
+
+/************ SEARCH ************/
+const q=document.getElementById("q");
+const sug=document.getElementById("suggestions");
+const card=document.getElementById("card");
+
+q.oninput=()=>{
+
+let text=q.value.toLowerCase().trim();
+sug.innerHTML="";
+card.innerHTML="";
+if(!text || !DB.length) return;
+
+let res=[];
+for(let r of DB){
+if(
+r[0].toLowerCase().includes(text)||
+r[1].toLowerCase().includes(text)||
+r[2].toLowerCase().includes(text)||
+r[3].includes(text)
+){
+res.push(r);
+if(res.length>=20) break;
+}
+}
+
+res.forEach(r=>{
+let div=document.createElement("div");
+div.className="list-group-item list-group-item-action";
+div.innerHTML=`<b>${r[1]}</b> <span class="text-muted">(${r[0]})</span><br><small>${r[2]}</small>`;
+div.onclick=()=>showCard(r);
+sug.appendChild(div);
+});
+};
+
+/************ CARD ************/
+function showCard(r){
+
+sug.innerHTML="";
+
+card.innerHTML=`
+<div class="card shadow p-4">
+<h4>${r[1]}</h4>
+<div class="mb-2"><span class="badge bg-primary">${r[2]}</span></div>
+
+<div class="row">
+<div class="col-6"><b>Crew ID</b><br>${r[0]}</div>
+<div class="col-6"><b>CLI</b><br>${r[4]}</div>
+</div>
+
+<hr>
+
+<div><b>Mobile</b><br>
+<a href="tel:${r[3]}" class="btn btn-success btn-sm mt-1">📞 ${r[3]}</a>
+</div>
+
+<hr>
+
+<div><b>CLI Name</b><br>${r[5]}</div>
+<div><b>Grade</b><br>${r[6]}</div>
+</div>
+`;
+}
+</script>
+
+</body>
+</html>
