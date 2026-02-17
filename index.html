@@ -32,34 +32,42 @@ body{background:#f3f6fb}
 <script>
 /************ CONFIG ************/
 const API_URL="https://script.google.com/macros/s/AKfycbyPLqkuNdK7-DF0aXl9PBfKJ-VMml5Dj8MaWC8OJ_CMXi-DBXg3MeSUoChCpaLKxh_U/exec";
-const CACHE_KEY="crew_db_v1";
+const CACHE_KEY="crew_db_v2";
 const CACHE_TIME=24*60*60*1000;
 
 let DB=[];
 
-/************ LOAD DATABASE ************/
-function loadDB(res){
+/************ JSONP GLOBAL CALLBACK ************/
+window.loadDB = function(res){
 
 localStorage.setItem(CACHE_KEY,JSON.stringify(res));
+
 DB=res.data;
-document.getElementById("status").innerText="Database loaded ("+DB.length+" records)";
-}
+
+document.getElementById("status").innerText=
+"Database Loaded : "+DB.length+" records";
+
+console.log("DB Loaded",DB.length);
+};
 
 /************ INIT ************/
 (function(){
 
-let cache=localStorage.getItem(CACHE_KEY);
+let cache=localStorage.getItem(CACHE_KEYE_KEY);
 
 if(cache){
+try{
 let obj=JSON.parse(cache);
 if(Date.now()-obj.updated < CACHE_TIME){
 DB=obj.data;
 document.getElementById("status").innerText="Loaded from cache ("+DB.length+")";
 return;
 }
+}catch(e){}
 }
 
 document.getElementById("status").innerText="Downloading database...";
+
 let s=document.createElement("script");
 s.src=API_URL+"?callback=loadDB";
 document.body.appendChild(s);
@@ -81,10 +89,10 @@ if(!text || !DB.length) return;
 let res=[];
 for(let r of DB){
 if(
-r[0].toLowerCase().includes(text)||
-r[1].toLowerCase().includes(text)||
-r[2].toLowerCase().includes(text)||
-r[3].includes(text)
+String(r[0]).toLowerCase().includes(text)||
+String(r[1]).toLowerCase().includes(text)||
+String(r[2]).toLowerCase().includes(text)||
+String(r[3]).includes(text)
 ){
 res.push(r);
 if(res.length>=20) break;
@@ -112,7 +120,7 @@ card.innerHTML=`
 
 <div class="row">
 <div class="col-6"><b>Crew ID</b><br>${r[0]}</div>
-<div class="col-6"><b>CLI</b><br>${r[4]}</div>
+<div class="col-6"><b>CLI</b><br>${r[4]||"-"}</div>
 </div>
 
 <hr>
@@ -123,8 +131,8 @@ card.innerHTML=`
 
 <hr>
 
-<div><b>CLI Name</b><br>${r[5]}</div>
-<div><b>Grade</b><br>${r[6]}</div>
+<div><b>CLI Name</b><br>${r[5]||"-"}</div>
+<div><b>Grade</b><br>${r[6]||"-"}</div>
 </div>
 `;
 }
@@ -132,4 +140,3 @@ card.innerHTML=`
 
 </body>
 </html>
-
